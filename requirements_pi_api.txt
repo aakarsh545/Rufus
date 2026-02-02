@@ -1,0 +1,7 @@
+# Requirements for Rufus Pi API Server
+openai>=1.0.0
+python-dotenv>=1.0.0
+flask>=3.0.0
+flask-cors>=4.0.0
+pygame>=2.5.0
+pyserial>=3.5

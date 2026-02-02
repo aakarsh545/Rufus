@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rufus Robot Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .config-bar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .config-bar input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .config-bar button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .servo-control {
+            margin-bottom: 20px;
+        }
+
+        .servo-control label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .angle-display {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .gesture-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .gesture-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .gesture-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .gesture-btn:active {
+            transform: translateY(0);
+        }
+
+        .speak-panel {
+            display: flex;
+            gap: 10px;
+        }
+
+        .speak-panel input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .speak-panel button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .speak-panel button:hover {
+            transform: scale(1.05);
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .connection-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Rufus Robot Controller</h1>
+
+        <!-- Pi URL Configuration -->
+        <div class="config-bar">
+            <input type="text" id="pi-url" placeholder="Enter Pi IP (e.g., http://192.168.1.100:5001)">
+            <button onclick="savePiUrl()">Save & Connect</button>
+        </div>
+
+        <!-- Connection Status -->
+        <div id="connection-status" class="connection-status disconnected">
+            ⚫ Not connected to Pi
+        </div>
+
+        <!-- Servo Control Panel -->
+        <div class="panel">
+            <h2>🎛️ Servo Control</h2>
+
+            <div class="servo-control">
+                <label>Head Pan (0-180°)</label>
+                <div class="slider-container">
+                    <input type="range" id="pan" min="0" max="180" value="90">
+                    <span class="angle-display" id="pan-angle">90°</span>
+                </div>
+            </div>
+
+            <div class="servo-control">
+                <label>Left Arm (50-180°)</label>
+                <div class="slider-container">
+                    <input type="range" id="left_arm" min="50" max="180" value="90">
+                    <span class="angle-display" id="left_arm-angle">90°</span>
+                </div>
+            </div>
+
+            <div class="servo-control">
+                <label>Right Arm (50-180°)</label>
+                <div class="slider-container">
+                    <input type="range" id="right_arm" min="50" max="180" value="90">
+                    <span class="angle-display" id="right_arm-angle">90°</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gesture Panel -->
+        <div class="panel">
+            <h2>🎭 Gestures</h2>
+            <div class="gesture-buttons">
+                <button class="gesture-btn" onclick="triggerGesture('wave')">👋 Wave</button>
+                <button class="gesture-btn" onclick="triggerGesture('nod')">✅ Nod (Yes)</button>
+                <button class="gesture-btn" onclick="triggerGesture('shake')">❌ Shake (No)</button>
+                <button class="gesture-btn" onclick="triggerGesture('happy')">😊 Happy</button>
+                <button class="gesture-btn" onclick="triggerGesture('sad')">😢 Sad</button>
+                <button class="gesture-btn" onclick="triggerGesture('excited')">🎉 Excited</button>
+                <button class="gesture-btn" onclick="triggerGesture('curious')">🤨 Curious</button>
+                <button class="gesture-btn" onclick="triggerGesture('rest')">😴 Rest</button>
+            </div>
+        </div>
+
+        <!-- Text-to-Speech Panel -->
+        <div class="panel">
+            <h2>🗣️ Text to Speech</h2>
+            <div class="speak-panel">
+                <input type="text" id="speak-text" placeholder="Type something for Rufus to say...">
+                <button onclick="speak()">Speak</button>
+            </div>
+            <div id="speak-status" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let PI_URL = localStorage.getItem('rufus_pi_url') || '';
+
+        // Load saved Pi URL on page load
+        window.onload = function() {
+            if (PI_URL) {
+                document.getElementById('pi-url').value = PI_URL;
+                checkConnection();
+            }
+        };
+
+        // Save Pi URL
+        function savePiUrl() {
+            const url = document.getElementById('pi-url').value.trim();
+            if (!url) {
+                showStatus('speak-status', '❌ Please enter a Pi URL', 'error');
+                return;
+            }
+
+            localStorage.setItem('rufus_pi_url', url);
+            PI_URL = url;
+            checkConnection();
+        }
+
+        // Check connection to Pi
+        async function checkConnection() {
+            const statusDiv = document.getElementById('connection-status');
+
+            try {
+                const response = await fetch(`${PI_URL}/health`);
+                if (response.ok) {
+                    statusDiv.textContent = '✅ Connected to Pi';
+                    statusDiv.className = 'connection-status connected';
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (error) {
+                statusDiv.textContent = '❌ Cannot connect to Pi';
+                statusDiv.className = 'connection-status disconnected';
+            }
+        }
+
+        // Send command to Pi
+        async function sendToPi(endpoint, data) {
+            if (!PI_URL) {
+                showStatus('speak-status', '❌ Please enter Pi URL first', 'error');
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${PI_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('Error:', error);
+                return false;
+            }
+        }
+
+        // Update angle when slider moves
+        async function updateAngle(servo) {
+            const slider = document.getElementById(servo);
+            const display = document.getElementById(servo + '-angle');
+            display.textContent = slider.value + '°';
+
+            // Send to Pi
+            await sendToPi('/api/servo', {
+                servo: servo,
+                angle: parseInt(slider.value)
+            });
+        }
+
+        // Add event listeners to sliders
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            slider.addEventListener('input', function() {
+                updateAngle(this.id);
+            });
+        });
+
+        // Trigger gesture
+        async function triggerGesture(gesture) {
+            const success = await sendToPi('/api/gesture', { gesture: gesture });
+            console.log('Gesture result:', success);
+        }
+
+        // Text to speech
+        async function speak() {
+            const text = document.getElementById('speak-text').value;
+
+            if (!text) {
+                showStatus('speak-status', '❌ Please enter some text', 'error');
+                return;
+            }
+
+            showStatus('speak-status', '🔊 Speaking...', 'info');
+
+            const success = await sendToPi('/api/speak', { text: text });
+
+            if (success) {
+                showStatus('speak-status', '✅ Done!', 'success');
+                setTimeout(() => {
+                    document.getElementById('speak-status').style.display = 'none';
+                }, 2000);
+            } else {
+                showStatus('speak-status', '❌ Failed to speak', 'error');
+            }
+        }
+
+        // Show status message
+        function showStatus(elementId, message, type) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        // Allow Enter key to trigger speech
+        document.getElementById('speak-text').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                speak();
+            }
+        });
+    </script>
+</body>
+</html>
